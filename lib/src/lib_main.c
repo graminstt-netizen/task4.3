@@ -125,8 +125,71 @@ Node* hash_table_insert(HashTable* table, const char* key) {
     return new_node;
 }
 
-// заглушка для функции перестроения (ее логику напишем на следующем шаге)
+// полноценное перестроение (рехеширование) таблицы при увеличении ее емкости
 void hash_table_resize(HashTable* table, size_t new_capacity) {
-    (void)table;
-    (void)new_capacity;
+    if (!table || new_capacity == 0) {
+        return;
+    }
+
+    // 1. выделяем новый массив бакетов большего размера
+    Node** new_buckets = (Node**)calloc(new_capacity, sizeof(Node*));
+    if (!new_buckets) {
+        return; // если память не выделилась, продолжаем работать со старой таблицей
+    }
+
+    // 2. переносим ВСЕ существующие узлы в новый массив БЕЗ перевыделения памяти
+    for (size_t i = 0; i < table->capacity; i++) {
+        Node* current = table->buckets[i];
+        while (current) {
+            Node* next_node = current->next; // запоминаем следующий узел в старой цепочке
+
+            // вычисляем новый индекс по новой емкости
+            unsigned int new_index = hash_function(current->key, new_capacity);
+
+            // вставляем узел в начало цепочки нового бакета
+            current->next = new_buckets[new_index];
+            new_buckets[new_index] = current;
+
+            current = next_node; // переходим к следующему узлу из старой цепочки
+        }
+    }
+
+    // 3. удаляем старый массив бакетов и обновляем структуру
+    free(table->buckets);
+    table->buckets = new_buckets;
+    table->capacity = new_capacity;
+}
+
+// удаление узла из таблицы по ключу
+int hash_table_remove(HashTable* table, const char* key) {
+    if (!table || !key) {
+        return 0;
+    }
+
+    unsigned int index = hash_function(key, table->capacity);
+    Node* current = table->buckets[index];
+    Node* prev = NULL;
+
+    // ищем узел в цепочке коллизий
+    while (current) {
+        if (strcmp(current->key, key) == 0) {
+            // если удаляем первый элемент в цепочке
+            if (prev == NULL) {
+                table->buckets[index] = current->next;
+            } else {
+                // если удаляем из середины или конца цепочки
+                prev->next = current->next;
+            }
+            
+            // освобождаем память удаляемого узла
+            free(current->key);
+            free(current);
+            table->size--;
+            return 1; // успешно удалено
+        }
+        prev = current;
+        current = current->next;
+    }
+
+    return 0; // элемент не найден
 }
