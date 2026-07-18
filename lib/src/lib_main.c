@@ -56,3 +56,77 @@ void hash_table_destroy(HashTable* table) {
     free(table->buckets); // освобождаем массив бакетов
     free(table);          // освобождаем структуру таблицы
 }
+
+// вспомогательная функция копирования строк, чтобы избежать предупреждений компилятора о strdup
+static char* string_duplicate(const char* s) {
+    size_t len = strlen(s) + 1;
+    char* d = (char*)malloc(len);
+    if (d) {
+        memcpy(d, s, len);
+    }
+    return d;
+}
+
+// поиск узла по строковому ключу
+Node* hash_table_find(HashTable* table, const char* key) {
+    if (!table || !key) {
+        return NULL;
+    }
+    // определяем индекс бакета
+    unsigned int index = hash_function(key, table->capacity);
+    Node* current = table->buckets[index];
+    
+    // идем по списку цепочки, пока не найдем или не дойдем до конца
+    while (current) {
+        if (strcmp(current->key, key) == 0) {
+            return current; // нашли!
+        }
+        current = current->next;
+    }
+    return NULL; // не нашли
+}
+
+// вставка ключа в таблицу
+Node* hash_table_insert(HashTable* table, const char* key) {
+    if (!table || !key) {
+        return NULL;
+    }
+
+    // 1. проверяем, есть ли уже такое слово
+    Node* existing = hash_table_find(table, key);
+    if (existing) {
+        existing->count++; // увеличиваем счетчик вхождений
+        return existing;
+    }
+
+    // 2. если слова нет, нужно создать новый узел
+    Node* new_node = (Node*)malloc(sizeof(Node));
+    if (!new_node) {
+        return NULL;
+    }
+    new_node->key = string_duplicate(key);
+    if (!new_node->key) {
+        free(new_node);
+        return NULL;
+    }
+    new_node->count = 1;
+
+    // 3. вставляем узел в начало цепочки соответствующего бакета (метод цепочек)
+    unsigned int index = hash_function(key, table->capacity);
+    new_node->next = table->buckets[index];
+    table->buckets[index] = new_node;
+    table->size++;
+
+    // 4. если таблица заполнена более чем на 75%, запускаем перестроение (рехеширование)
+    if ((double)table->size / table->capacity >= 0.75) {
+        hash_table_resize(table, table->capacity * 2);
+    }
+
+    return new_node;
+}
+
+// заглушка для функции перестроения (ее логику напишем на следующем шаге)
+void hash_table_resize(HashTable* table, size_t new_capacity) {
+    (void)table;
+    (void)new_capacity;
+}
