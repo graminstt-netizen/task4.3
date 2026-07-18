@@ -9,6 +9,8 @@
 #include "lib_main.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include <ctype.h>
 
 // простая и надежная хеш-функция fnv-1a для строк
 unsigned int hash_function(const char* key, size_t capacity) {
@@ -192,4 +194,46 @@ int hash_table_remove(HashTable* table, const char* key) {
     }
 
     return 0; // элемент не найден
+}
+
+// чтение файла, разбиение текста на слова и добавление их в таблицу
+int process_text_file(HashTable* table, const char* filename) {
+    if (!table || !filename) {
+        return 0;
+    }
+
+    FILE* file = fopen(filename, "r");
+    if (!file) {
+        fprintf(stderr, "Error: Cannot open file '%s'\n", filename);
+        return 0;
+    }
+
+    char buffer[256];
+    size_t length = 0;
+    int c;
+
+    while ((c = fgetc(file)) != EOF) {
+        if (isalnum(c)) {
+            // собираем слово по символам и приводим к нижнему регистру
+            if (length < sizeof(buffer) - 1) {
+                buffer[length++] = (char)tolower(c);
+            }
+        } else {
+            // разделитель найден, записываем готовое слово в таблицу
+            if (length > 0) {
+                buffer[length] = '\0';
+                hash_table_insert(table, buffer);
+                length = 0;
+            }
+        }
+    }
+
+    // обрабатываем слово на конце файла, если разделителя не было
+    if (length > 0) {
+        buffer[length] = '\0';
+        hash_table_insert(table, buffer);
+    }
+
+    fclose(file);
+    return 1;
 }
