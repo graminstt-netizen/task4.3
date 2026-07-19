@@ -5,10 +5,12 @@ lib_main.h - заголовочный файл модуля lib_main.c.
 МК-101
 */
 
+
 #ifndef LIB_MAIN_H
 #define LIB_MAIN_H
 
 #include <stddef.h>
+
 
 // узел нашей хеш-таблицы (элемент связного списка)
 typedef struct Node {

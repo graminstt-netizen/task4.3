@@ -5,6 +5,7 @@ main.c - главная программа консольного приложе
 МК-101
 */
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "lib_main.h"
