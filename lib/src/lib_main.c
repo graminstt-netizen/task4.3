@@ -1,6 +1,5 @@
 /*
-описание файла: реализация функций создания, удаления хеш-таблицы
-и вычисления хеш-функции для строк.
+lib_main.c - реализация функций создания, удаления хеш-таблицы и вычисления хеш-функции для строк.
 
 Бабурин Дмитрий Сергеевич
 МК-101
@@ -59,7 +58,7 @@ void hash_table_destroy(HashTable* table) {
     free(table);          // освобождаем структуру таблицы
 }
 
-// вспомогательная функция копирования строк, чтобы избежать предупреждений компилятора о strdup
+// вспомогательная функция копирования строк
 static char* string_duplicate(const char* s) {
     size_t len = strlen(s) + 1;
     char* d = (char*)malloc(len);
@@ -94,14 +93,14 @@ Node* hash_table_insert(HashTable* table, const char* key) {
         return NULL;
     }
 
-    // 1. проверяем, есть ли уже такое слово
+    // Проверяем, есть ли уже такое слово
     Node* existing = hash_table_find(table, key);
     if (existing) {
         existing->count++; // увеличиваем счетчик вхождений
         return existing;
     }
 
-    // 2. если слова нет, нужно создать новый узел
+    // Если слова нет, нужно создать новый узел
     Node* new_node = (Node*)malloc(sizeof(Node));
     if (!new_node) {
         return NULL;
@@ -113,13 +112,13 @@ Node* hash_table_insert(HashTable* table, const char* key) {
     }
     new_node->count = 1;
 
-    // 3. вставляем узел в начало цепочки соответствующего бакета (метод цепочек)
+    // Вставляем узел в начало цепочки соответствующего бакета (метод цепочек)
     unsigned int index = hash_function(key, table->capacity);
     new_node->next = table->buckets[index];
     table->buckets[index] = new_node;
     table->size++;
 
-    // 4. если таблица заполнена более чем на 75%, запускаем перестроение (рехеширование)
+    // Если таблица заполнена более чем на 75%, запускаем перестроение (рехеширование)
     if ((double)table->size / table->capacity >= 0.75) {
         hash_table_resize(table, table->capacity * 2);
     }
